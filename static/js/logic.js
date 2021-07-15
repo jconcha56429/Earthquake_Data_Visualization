@@ -8,70 +8,28 @@ var lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{
     id: "light-v10",
     accessToken: API_KEY
     }).addTo(map);
-
 url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojson"
-function color_matcher(depth){
+function color_matcher(depth,depth_array){
     var color_scale = chroma.scale(['yellow','red']);
-    if (depth>600){
-        return(`rgb(${color_scale(1).rgb()})`)
-    }
-    else if (depth>540){
-        return(`rgb(${color_scale(.9).rgb()})`)
-    }
-    else if (depth>480){
-        return(`rgb(${color_scale(.8).rgb()})`)
-    }
-    else if (depth>420){
-        return(`rgb(${color_scale(.7).rgb()})`)
-    }
-    else if (depth>360){
-        return(`rgb(${color_scale(.6).rgb()})`)
-    }
-    else if (depth>300){
-        return(`rgb(${color_scale(.5).rgb()})`)
-    }
-    else if (depth>240){
-        return(`rgb(${color_scale(.4).rgb()})`)
-    }
-    else if (depth>180){
-        return(`rgb(${color_scale(.3).rgb()})`)
-    }
-    else if (depth>120){
-        return(`rgb(${color_scale(.2).rgb()})`)
-    }
-    else if (depth>60){
-        return(`rgb(${color_scale(.1).rgb()})`)
-    }
-    else {
-        return(`rgb(${color_scale(.0).rgb()})`)
-    }
+    var depth_scale = d3.scaleLinear()
+        .domain([d3.min(depth_array),d3.max(depth_array)])
+        .range([0,1]);
+    scaled_depth = depth_scale(depth)
+    rgb_values = color_scale(scaled_depth).rgb()
+    return(`rgb(${rgb_values})`)
 }
 function create_markers(data){
-
+    depth_array = data.map(d => d.geometry.coordinates[2]);    
     for(i=0;i<data.length;i++){
-        // console.log(data[i])
         lon = data[i]["geometry"]["coordinates"][0]
         lat = data[i]["geometry"]["coordinates"][1]
         depth = data[i]["geometry"]["coordinates"][2]
         L.circle([lat,lon],{
             radius:depth*500,
-            color: color_matcher(depth)
+            color: color_matcher(depth,depth_array)
         }).addTo(map)
-        // if (depth > 100){
-        //     console.log("gazoonga!")
-        // }
-        // else if(depth<100){
-        //     console.log("grazinga!")
-        // }
     }
 }
 d3.json(url).then(function(data){
-    features = data.features
-    // console.log(features[0]["geometry"]
-    // console.log(data)
     create_markers(data.features)
-    var color_scale = chroma.scale(['yellow','red']);
-    // d3.select("#test").append("text").text("caca").style("color",`rgb(${color_scale(.0).rgb()})`)
-    console.log(`rgb(${color_scale(1).rgb()})`)
-    
 })
