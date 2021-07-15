@@ -1,5 +1,5 @@
 var map = L.map("map", {
-    center: [40.73, -74.0059],
+    center: [0, 0],
     zoom: 2,
   });
 var lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
@@ -8,6 +8,8 @@ var lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{
     id: "dark-v10",
     accessToken: API_KEY
     }).addTo(map);
+map.setMaxBounds(map.getBounds());
+
 
 function color_matcher(depth,depth_array){
     var color_scale = chroma.scale(['blue','red']);
@@ -32,7 +34,7 @@ function legend_maker(depth_array){
         labels.push(`<li style="background-color: ${color_matcher(i,nums)}">${parseFloat(num_scale(i)).toFixed(2)}</li>`)
     }
     legend.onAdd = function() {
-        var div = L.DomUtil.create("div", "legend info");
+        var div = L.DomUtil.create("div", "legend_info");
         div.innerHTML = legend_info
         div.innerHTML += `<ul>${labels.join("")}</ul>`
         return div 
