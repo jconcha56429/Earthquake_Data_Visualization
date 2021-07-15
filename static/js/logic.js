@@ -20,15 +20,24 @@ function color_matcher(depth,depth_array){
 }
 function create_markers(data){
     depth_array = data.map(d => d.geometry.coordinates[2]);    
+    layer_group1 = L.layerGroup()
     for(i=0;i<data.length;i++){
         lon = data[i]["geometry"]["coordinates"][0]
         lat = data[i]["geometry"]["coordinates"][1]
         depth = data[i]["geometry"]["coordinates"][2]
-        L.circle([lat,lon],{
+        var circle = L.circle([lat,lon],{
             radius:depth*500,
             color: color_matcher(depth,depth_array)
-        }).addTo(map)
+        }).addTo(layer_group1)//.addTo(map)
+        console.log(data[i]["properties"])
+        place = data[i]["properties"]["place"]   
+        time = new Date(data[i]["properties"]["time"])
+        mag = data[i]["properties"]["mag"]
+        circle.bindPopup(`<strong>${place} </strong> <p> <strong> Date/Time:</strong> ${time}<br> <strong>Magnitude:</strong> ${mag}</p>`)
     }
+    layer_group1.addTo(map)
+    true_layers = {"Earthquaks":layer_group1}
+    L.control.layers(null,true_layers,{collapsed:false}).addTo(map)
 }
 d3.json(url).then(function(data){
     create_markers(data.features)
