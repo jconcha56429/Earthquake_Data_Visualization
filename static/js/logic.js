@@ -2,14 +2,21 @@ var map = L.map("map", {
     center: [0, 0],
     zoom: 2,
   });
-var lightmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+
+var dark_map = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
     attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
     maxZoom: 18,
     id: "dark-v10",
     accessToken: API_KEY
     }).addTo(map);
-map.setMaxBounds(map.getBounds());
 
+var light_map = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+    maxZoom: 18,
+    id: "light-v10",
+    accessToken: API_KEY
+    })
+map.setMaxBounds(map.getBounds());
 
 function color_matcher(depth,depth_array){
     var color_scale = chroma.scale(['blue','red']);
@@ -28,7 +35,7 @@ function legend_maker(depth_array){
     num_scale = d3.scaleLinear()
         .domain([d3.min(nums),d3.max(nums)])
         .range([d3.min(depth_array),d3.max(depth_array)])
-    legend_info = "<h1>Earthquake Depth Scale</h1>"
+    legend_info = "<h1>Earthquake Depth Scale (m)</h1>"
     var labels = []
     for(i=0;i<10;i++){
         labels.push(`<li style="background-color: ${color_matcher(i,nums)}">${parseFloat(num_scale(i)).toFixed(2)}</li>`)
@@ -42,15 +49,16 @@ function legend_maker(depth_array){
     legend.addTo(map)
 }
 
-function create_markers(data){
+function create_markers(data,plates){
     depth_array = data.map(d => d.geometry.coordinates[2]);    
     layer_group1 = L.layerGroup()
     for(i=0;i<data.length;i++){
+        mag = data[i]["properties"]["mag"]
         lon = data[i]["geometry"]["coordinates"][0]
         lat = data[i]["geometry"]["coordinates"][1]
         depth = data[i]["geometry"]["coordinates"][2]
         var circle = L.circle([lat,lon],{
-            radius:depth*500,
+            radius:mag*1550,
             color: color_matcher(depth,depth_array)
         }).addTo(layer_group1)
         place = data[i]["properties"]["place"]   
@@ -60,12 +68,20 @@ function create_markers(data){
         circle.bindPopup(`<strong>${place}</strong> <p> <strong> Date/Time:</strong> ${time}<br> <strong>Magnitude:</strong> ${mag}<br> <strong> Depth:</strong> ${depth}</p>`)
     }
     layer_group1.addTo(map)
-    true_layers = {"Earthquaks":layer_group1}
-    L.control.layers(null,true_layers,{collapsed:false}).addTo(map)
+    true_layers = {"Earthquakes":layer_group1,"Tectonic Plates":plates}
+    tile_layer = {"Dark Map":dark_map, "Light Map":light_map}
+    L.control.layers(tile_layer,true_layers,{collapsed:false}).addTo(map)
     legend_maker(depth_array)
 }
 
 url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojson"
-d3.json(url).then(function(data){
-    create_markers(data.features)
+url_2 = "static/js/PB2002_plates.json"
+
+d3.json(url_2).then(function(plate_data){
+    features = L.geoJSON(plate_data.features)
+
+    d3.json(url).then(function(data){
+        create_markers(data.features,features)
+
+})
 })
