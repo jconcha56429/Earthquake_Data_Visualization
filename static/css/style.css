@@ -21,3 +21,10 @@ li {
 ul {
   list-style-type: none
 }
+/* .leaflet-interactive {
+  fill-opacity:0;
+} */
+.map-path {
+  fill-opacity:0;
+  stroke:yellow
+}

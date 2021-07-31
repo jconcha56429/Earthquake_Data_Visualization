@@ -1,13 +1,14 @@
 var map = L.map("map", {
     center: [0, 0],
     zoom: 2,
+    maxZoom:10
   });
 
 var dark_map = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
     attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
     maxZoom: 18,
     id: "dark-v10",
-    accessToken: API_KEY
+    accessToken: API_KEY,
     }).addTo(map);
 
 var light_map = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
@@ -16,6 +17,7 @@ var light_map = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/
     id: "light-v10",
     accessToken: API_KEY
     })
+    
 map.setMaxBounds(map.getBounds());
 
 function color_matcher(depth,depth_array){
@@ -57,7 +59,12 @@ function create_markers(data,plates){
         lon = data[i]["geometry"]["coordinates"][0]
         lat = data[i]["geometry"]["coordinates"][1]
         depth = data[i]["geometry"]["coordinates"][2]
+        map.createPane("markers")
+        map.getPane("markers").style.zIndex = 997;
+        map.createPane("popup")
+        map.getPane("popup").style.zIndex = 999;
         var circle = L.circle([lat,lon],{
+            pane:"markers",
             radius:mag*1550,
             color: color_matcher(depth,depth_array)
         }).addTo(layer_group1)
@@ -65,7 +72,7 @@ function create_markers(data,plates){
         depth = data[i]["geometry"]["coordinates"][2]
         time = new Date(data[i]["properties"]["time"])
         mag = data[i]["properties"]["mag"]
-        circle.bindPopup(`<strong>${place}</strong> <p> <strong> Date/Time:</strong> ${time}<br> <strong>Magnitude:</strong> ${mag}<br> <strong> Depth:</strong> ${depth}</p>`)
+        circle.bindPopup(`<strong>${place}</strong> <p> <strong> Date/Time:</strong> ${time}<br> <strong>Magnitude:</strong> ${mag}<br> <strong> Depth:</strong> ${depth}</p>`,{pane:"popup"})
     }
     layer_group1.addTo(map)
     true_layers = {"Earthquakes":layer_group1,"Tectonic Plates":plates}
@@ -78,10 +85,11 @@ url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_month.geojs
 url_2 = "static/js/PB2002_plates.json"
 
 d3.json(url_2).then(function(plate_data){
-    features = L.geoJSON(plate_data.features)
-
+    var features = L.geoJSON(plate_data.features)
+    features.setStyle({'className': 'map-path'})
     d3.json(url).then(function(data){
-        create_markers(data.features,features)
+        true_data = data.features
+        create_markers(true_data,features)
 
 })
 })
